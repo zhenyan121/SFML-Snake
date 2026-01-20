@@ -1,5 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 constexpr int WINDOWS_WIDTH = 800;
 constexpr int WINDOWS_HEIGHT = 600;
@@ -11,6 +13,8 @@ struct World {
     std::vector<sf::RectangleShape> board;
     float cellSize;
     sf::Vector2f originPoint = {0.0f, 0.0f};
+
+    sf::Vector2i pellet;
 };
 
 struct Snake {
@@ -34,6 +38,9 @@ inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& boa
 }
 
 void update (float deltaTime, World& world, Snake& snake);
+
+bool spawnPellet(World& world, Snake& snake);
+
 
 int main() {
     
@@ -76,11 +83,16 @@ int main() {
     snake.node.push_back({snake.node[0].x, snake.node[0].y - 1});
     snake.node.push_back({snake.node[0].x, snake.node[0].y - 2});
     setBoardColor(snake.node[0], world.board, sf::Color::Red);
-    setBoardColor(snake.node[1], world.board, sf::Color::Green);
-    setBoardColor(snake.node[2], world.board, sf::Color::Green);   
+    setBoardColor(snake.node[1], world.board, sf::Color::Yellow);
+    setBoardColor(snake.node[2], world.board, sf::Color::Yellow);   
 
     sf::Clock clock;
     // 游戏循环
+
+    std::srand(std::time(0));
+
+    spawnPellet(world, snake);
+
     while (window.isOpen()) {
 
         
@@ -138,6 +150,9 @@ void update (float deltaTime, World& world, Snake& snake) {
     snake.currentTime += deltaTime;
     if (snake.currentTime >= snake.moveTime) {
         snake.currentTime = 0;
+        
+        auto oldTail = snake.node[snake.node.size() - 1];
+        
         // 更新蛇的位置和颜色
         //std::cout << snake.node.size() << "\n";
         // 更新旧尾部的颜色
@@ -147,8 +162,9 @@ void update (float deltaTime, World& world, Snake& snake) {
             snake.node[i] = snake.node[i - 1];
         }
         // 更新旧头部的颜色 
-        setBoardColor(snake.node[0], world.board, sf::Color::Green);
+        setBoardColor(snake.node[0], world.board, sf::Color::Yellow);
         snake.node[0] += snake.direction;
+        
         //处理边界情况
         if (snake.node[0].x >= ROW) {
             snake.node[0].x = 0;
@@ -162,7 +178,13 @@ void update (float deltaTime, World& world, Snake& snake) {
         if (snake.node[0].y < 0) {
             snake.node[0].y = COL - 1;
         }
-
+        
+        // 如果吃到豆子
+        if (snake.node[0] == world.pellet) {
+            spawnPellet(world, snake);
+            setBoardColor(oldTail, world.board, sf::Color::Yellow);
+            snake.node.push_back(oldTail);
+        }
         auto [X, Y] = snake.node[0];
         // 更新新头部的颜色
         world.board[getIndex(X, Y)].setFillColor(sf::Color::Red);
@@ -170,6 +192,23 @@ void update (float deltaTime, World& world, Snake& snake) {
 
 }
 
+bool spawnPellet(World& world, Snake& snake) {
+    bool isSpwan = false;
+    
+    while (!isSpwan) {
+        int pelletPos = rand() % (ROW * COL);
+        int row = pelletPos / COL;
+        int col = pelletPos % COL;
+        int index = getIndex(row, col);
+
+        if (world.board[index].getFillColor() == sf::Color::White) {
+            isSpwan = true;
+            world.pellet = {row, col};
+            world.board[index].setFillColor(sf::Color::Green);
+        }
+    }
+    return true;
+}
 
 
 
