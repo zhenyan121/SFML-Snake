@@ -18,7 +18,7 @@ struct Snake {
     std::vector<sf::Vector2i> node;
     sf::Vector2i direction = {0, 1};
 
-    const float moveTime = 0.3f;
+    const float moveTime = 0.2f;
 
     float currentTime = 0.f;
 
@@ -92,15 +92,19 @@ int main() {
             } else if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>()) {
                 switch (keyReleased->scancode) {
                     case (sf::Keyboard::Scan::Up):
-                        snake.direction = {-1, 0};
+                        if (snake.node[0]  + (sf::Vector2i){-1, 0} != snake.node[1])
+                            snake.direction = {-1, 0};
                         break;
                     case (sf::Keyboard::Scan::Down):
-                        snake.direction = {1, 0};
+                        if (snake.node[0]  + (sf::Vector2i){1, 0} != snake.node[1])
+                            snake.direction = {1, 0};
                         break;
                     case (sf::Keyboard::Scan::Right):
-                        snake.direction = {0, 1};
+                        if (snake.node[0]  + (sf::Vector2i){0, 1} != snake.node[1])
+                            snake.direction = {0, 1};
                         break;
                     case (sf::Keyboard::Scan::Left):
+                        if (snake.node[0]  + (sf::Vector2i){0, -1} != snake.node[1])
                         snake.direction = {0, -1};
                         break;
                     default:
@@ -145,6 +149,20 @@ void update (float deltaTime, World& world, Snake& snake) {
         // 更新旧头部的颜色 
         setBoardColor(snake.node[0], world.board, sf::Color::Green);
         snake.node[0] += snake.direction;
+        //处理边界情况
+        if (snake.node[0].x >= ROW) {
+            snake.node[0].x = 0;
+        }
+        if (snake.node[0].x < 0) {
+            snake.node[0].x = ROW - 1;
+        }
+        if (snake.node[0].y >= COL) {
+            snake.node[0].y = 0;
+        }
+        if (snake.node[0].y < 0) {
+            snake.node[0].y = COL - 1;
+        }
+
         auto [X, Y] = snake.node[0];
         // 更新新头部的颜色
         world.board[getIndex(X, Y)].setFillColor(sf::Color::Red);
