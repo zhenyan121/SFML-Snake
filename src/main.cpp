@@ -1,22 +1,11 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-
 constexpr int WINDOWS_WIDTH = 800;
 constexpr int WINDOWS_HEIGHT = 600;
 constexpr char* WINDOWS_TITLE = "SFML_Snake";
 constexpr int ROW = 10;
 constexpr int COL = 10;
-
-
-inline int getIndex(int row, int col) {
-    return row * ROW + col; 
-}
-
-inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& board, const sf::Color& color) {
-    int index = getIndex(pos.x, pos.y);
-    board[index].setFillColor(color);
-}
 
 struct World {
     std::vector<sf::RectangleShape> board;
@@ -29,11 +18,20 @@ struct Snake {
     std::vector<sf::Vector2i> node;
     sf::Vector2i direction = {0, 1};
 
-    const float moveTime = 1.f;
+    const float moveTime = 0.3f;
 
     float currentTime = 0.f;
 
 };
+
+inline int getIndex(int row, int col) {
+    return row * ROW + col; 
+}
+
+inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& board, const sf::Color& color) {
+    int index = getIndex(pos.x, pos.y);
+    board[index].setFillColor(color);
+}
 
 void update (float deltaTime, World& world, Snake& snake);
 
@@ -91,6 +89,23 @@ int main() {
 
             if (event->is<sf::Event::Closed>()) {
                 window.close();
+            } else if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>()) {
+                switch (keyReleased->scancode) {
+                    case (sf::Keyboard::Scan::Up):
+                        snake.direction = {-1, 0};
+                        break;
+                    case (sf::Keyboard::Scan::Down):
+                        snake.direction = {1, 0};
+                        break;
+                    case (sf::Keyboard::Scan::Right):
+                        snake.direction = {0, 1};
+                        break;
+                    case (sf::Keyboard::Scan::Left):
+                        snake.direction = {0, -1};
+                        break;
+                    default:
+                        std::cout << "Unknow key input\n";
+                }
             }
 
         }   
