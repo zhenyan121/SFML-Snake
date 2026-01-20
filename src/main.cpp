@@ -9,15 +9,33 @@ constexpr int ROW = 10;
 constexpr int COL = 10;
 
 
+inline int getIndex(int row, int col) {
+    return row * ROW + col; 
+}
+
+inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& board, const sf::Color& color) {
+    int index = getIndex(pos.x, pos.y);
+    board[index].setFillColor(color);
+}
+
 struct World {
     std::vector<sf::RectangleShape> board;
     float cellSize;
     sf::Vector2f originPoint = {0.0f, 0.0f};
 };
 
+struct Snake {
+    // 这里的第一个参数是row 第二个是col，不要和坐标的x与y搞混了
+    std::vector<sf::Vector2i> node;
+    sf::Vector2i direction = {0, 1};
 
+    const float moveTime = 1.f;
 
+    float currentTime = 0.f;
 
+};
+
+void update (float deltaTime, World& world, Snake& snake);
 
 int main() {
     
@@ -41,9 +59,10 @@ int main() {
         (WINDOWS_HEIGHT - (world.cellSize * ROW)) / 2
     };
 
+
     for (int i = 0; i < ROW; i++) {
         for (int j = 0; j < COL; j++) {
-            int index = i * ROW + j;
+            int index = getIndex(i, j);
             world.board[index].setFillColor(sf::Color::White);
             world.board[index].setOutlineThickness(1.f);
             world.board[index].setOutlineColor(sf::Color::Black);
@@ -52,10 +71,18 @@ int main() {
             world.board[index].setPosition({X + j * world.cellSize, Y + i * world.cellSize});
         }
     }
+    // 创建蛇
+    Snake snake;
+
+    snake.node.push_back({ROW / 2, COL / 2});
+    snake.node.push_back({snake.node[0].x, snake.node[0].y - 1});
+    snake.node.push_back({snake.node[0].x, snake.node[0].y - 2});
+    setBoardColor(snake.node[0], world.board, sf::Color::Red);
+    setBoardColor(snake.node[1], world.board, sf::Color::Green);
+    setBoardColor(snake.node[2], world.board, sf::Color::Green);   
+
+    sf::Clock clock;
     // 游戏循环
-
-
-    
     while (window.isOpen()) {
 
         
@@ -68,8 +95,10 @@ int main() {
 
         }   
 
+        update(clock.restart().asSeconds(), world, snake);
+
         window.clear(sf::Color::White);
-        
+        // 渲染世界网格
         for (const auto& cell : world.board ) {
             window.draw(cell);
         }
@@ -81,6 +110,32 @@ int main() {
 
 }
 
+
+
+void update (float deltaTime, World& world, Snake& snake) {
+
+    
+
+    snake.currentTime += deltaTime;
+    if (snake.currentTime >= snake.moveTime) {
+        snake.currentTime = 0;
+        // 更新蛇的位置和颜色
+        //std::cout << snake.node.size() << "\n";
+        // 更新旧尾部的颜色
+        setBoardColor(snake.node[snake.node.size() - 1], world.board, sf::Color::White);
+        for (int i = snake.node.size() - 1; i > 0 ; i--) {
+            
+            snake.node[i] = snake.node[i - 1];
+        }
+        // 更新旧头部的颜色 
+        setBoardColor(snake.node[0], world.board, sf::Color::Green);
+        snake.node[0] += snake.direction;
+        auto [X, Y] = snake.node[0];
+        // 更新新头部的颜色
+        world.board[getIndex(X, Y)].setFillColor(sf::Color::Red);
+    }
+
+}
 
 
 
