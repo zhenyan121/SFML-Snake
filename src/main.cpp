@@ -28,6 +28,12 @@ struct Snake {
 
 };
 
+enum class GameState {
+    GAME_RUNING,
+    GAME_LOSE,
+    GAME_WIN
+};
+
 inline int getIndex(int row, int col) {
     return row * ROW + col; 
 }
@@ -37,10 +43,11 @@ inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& boa
     board[index].setFillColor(color);
 }
 
-void update (float deltaTime, World& world, Snake& snake);
+void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText);
 
 bool spawnPellet(World& world, Snake& snake);
 
+bool loadSystemFont(sf::Font& font);
 
 int main() {
     
@@ -53,6 +60,9 @@ int main() {
     window.setVerticalSyncEnabled(true);
     
     //初始化游戏
+
+    GameState gameState = GameState::GAME_RUNING;
+
     World world;
 
     world.board.resize(ROW * COL);
@@ -87,12 +97,26 @@ int main() {
     setBoardColor(snake.node[2], world.board, sf::Color::Yellow);   
 
     sf::Clock clock;
-    // 游戏循环
+    
 
     std::srand(std::time(0));
 
     spawnPellet(world, snake);
 
+    sf::Font font;
+    if (!loadSystemFont(font)) {
+        std::cerr << "load font failed\n";
+    }
+    sf::Text gameOverText(font);
+    gameOverText.setCharacterSize(24);
+
+    gameOverText.setPosition({WINDOWS_WIDTH / 2, WINDOWS_HEIGHT / 2});
+
+    gameOverText.setFillColor(sf::Color::Black);
+
+    gameOverText.setStyle(sf::Text::Bold);
+
+    // 游戏循环
     while (window.isOpen()) {
 
         
@@ -125,8 +149,9 @@ int main() {
             }
 
         }   
-
-        update(clock.restart().asSeconds(), world, snake);
+        if (gameState == GameState::GAME_RUNING) {
+            update(clock.restart().asSeconds(), world, snake, gameState, gameOverText);
+        }
 
         window.clear(sf::Color::White);
         // 渲染世界网格
@@ -134,6 +159,10 @@ int main() {
             window.draw(cell);
         }
 
+        // 渲染结束画面
+        if (gameState != GameState::GAME_RUNING) {
+            window.draw(gameOverText);
+        }
         window.display();
 
     }
@@ -143,7 +172,7 @@ int main() {
 
 
 
-void update (float deltaTime, World& world, Snake& snake) {
+void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText) {
 
     
 
@@ -185,6 +214,17 @@ void update (float deltaTime, World& world, Snake& snake) {
             setBoardColor(oldTail, world.board, sf::Color::Yellow);
             snake.node.push_back(oldTail);
         }
+
+        // 如果碰到身体
+
+        for (int i = 1; i < snake.node.size(); i++) {
+            if (snake.node[0] == snake.node[i]) {
+                gameState = GameState::GAME_LOSE;
+                std::cout << "GameOver, you lose\n";
+                gameOverText.setString("You, lose!");
+            }
+        }
+
         auto [X, Y] = snake.node[0];
         // 更新新头部的颜色
         world.board[getIndex(X, Y)].setFillColor(sf::Color::Red);
@@ -210,6 +250,60 @@ bool spawnPellet(World& world, Snake& snake) {
     return true;
 }
 
+bool loadSystemFont(sf::Font& font) {
+    std::vector<std::string> fontPaths;
+    
+    #ifdef _WIN32
+    // Windows系统字体路径
+    fontPaths = {
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "C:\\Windows\\Fonts\\arialbd.ttf",    // Arial Bold
+        "C:\\Windows\\Fonts\\tahoma.ttf",
+        "C:\\Windows\\Fonts\\verdana.ttf",
+        "C:\\Windows\\Fonts\\cour.ttf",       // Courier New
+        "C:\\Windows\\Fonts\\times.ttf",      // Times New Roman
+    };
+    
+    #elif __APPLE__
+    // macOS系统字体路径
+    fontPaths = {
+        "/System/Library/Fonts/SFNS.ttf",       // San Francisco (系统默认)
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/Times.ttc",
+        "/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/Courier.ttc",
+    };
+    
+    #elif __linux__
+    // Linux系统字体路径（不同发行版路径不同）
+    fontPaths = {
+        // Debian/Ubuntu
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+        // Fedora/RHEL
+        "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
+        // Arch
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        // 通用
+        "/usr/share/fonts/TTF/arial.ttf",
+        "/usr/share/fonts/TTF/tahoma.ttf",
+        "/usr/share/fonts/TTF/verdana.ttf",
+    };
+    
+    #endif
+    
+    // 尝试所有可能的字体路径
+    for (const auto& path : fontPaths) {
+        if (font.openFromFile(path)) {
+            std::cout << "Loaded font from: " << path << std::endl;
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 
 
