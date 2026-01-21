@@ -24,8 +24,12 @@ struct World {
 struct Snake {
     // 这里的第一个参数是row 第二个是col，不要和坐标的x与y搞混了
     std::vector<sf::Vector2i> node;
+    
+    int len = 3;
+
     sf::Vector2i direction = {0, 1};
 
+    
     const float moveTime = 0.18f;
 
     float currentTime = 0.f;

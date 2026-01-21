@@ -13,7 +13,7 @@ inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& boa
     board[index].setFillColor(color);
 }
 
-void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText);
+void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText, sf::Text& score);
 
 bool spawnPellet(World& world, Snake& snake);
 
@@ -90,6 +90,16 @@ int main() {
 
     gameOverText.setStyle(sf::Text::Bold);
 
+    sf::Text score(font);
+    score.setCharacterSize(24);
+
+    score.setPosition({0, 0});
+
+    score.setFillColor(sf::Color::Black);
+
+    score.setStyle(sf::Text::Bold);
+
+    score.setString("Score: 0");
     // 游戏循环
     while (window.isOpen()) {
 
@@ -124,7 +134,7 @@ int main() {
 
         }   
         if (gameState == GameState::GAME_RUNING) {
-            update(clock.restart().asSeconds(), world, snake, gameState, gameOverText);
+            update(clock.restart().asSeconds(), world, snake, gameState, gameOverText, score);
         }
 
         window.clear(sf::Color::White);
@@ -132,6 +142,9 @@ int main() {
         for (const auto& cell : world.board ) {
             window.draw(cell);
         }
+
+        // 渲染分数
+        window.draw(score);
 
         // 渲染结束画面
         if (gameState != GameState::GAME_RUNING) {
@@ -146,7 +159,7 @@ int main() {
 
 
 
-void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText) {
+void update (float deltaTime, World& world, Snake& snake, GameState& gameState, sf::Text& gameOverText, sf::Text& score) {
 
     
 
@@ -209,11 +222,14 @@ void update (float deltaTime, World& world, Snake& snake, GameState& gameState, 
         if (snake.node[0] == world.pellet) {
             setBoardColor(oldTail, world.board, sf::Color::Yellow);
             snake.node.push_back(oldTail);
+            snake.len++;
             world.blank.erase(getIndex(oldTail.x, oldTail.y));
             if(!spawnPellet(world, snake)) {
                 gameState = GameState::GAME_WIN;
                 gameOverText.setString("You, win");
             }
+            score.setString("Score: " + std::to_string(snake.len - 3));
+
         }
 
         
