@@ -1,46 +1,11 @@
-#include <SFML/Graphics.hpp>
+#include "Game.hpp"
+#include "AI.hpp"
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include <unordered_set>
 
-constexpr int WINDOWS_WIDTH = 800;
-constexpr int WINDOWS_HEIGHT = 600;
-constexpr char* WINDOWS_TITLE = "SFML_Snake";
-constexpr int ROW = 10;
-constexpr int COL = 10;
 
-struct World {
-    std::vector<sf::RectangleShape> board;
-    float cellSize;
-    sf::Vector2f originPoint = {0.0f, 0.0f};
 
-    sf::Vector2i pellet;
-
-    std::unordered_set<int> blank;
-
-};
-
-struct Snake {
-    // 这里的第一个参数是row 第二个是col，不要和坐标的x与y搞混了
-    std::vector<sf::Vector2i> node;
-    sf::Vector2i direction = {0, 1};
-
-    const float moveTime = 0.2f;
-
-    float currentTime = 0.f;
-
-};
-
-enum class GameState {
-    GAME_RUNING,
-    GAME_LOSE,
-    GAME_WIN
-};
-
-inline int getIndex(int row, int col) {
-    return row * ROW + col; 
-}
 
 inline void setBoardColor(sf::Vector2i pos, std::vector<sf::RectangleShape>& board, const sf::Color& color) {
     int index = getIndex(pos.x, pos.y);
@@ -187,7 +152,17 @@ void update (float deltaTime, World& world, Snake& snake, GameState& gameState, 
     snake.currentTime += deltaTime;
     if (snake.currentTime >= snake.moveTime) {
         snake.currentTime = 0;
-        
+        static std::queue<sf::Vector2i> action;
+        if (action.empty()) {
+            decideNextMove(action, world, snake);
+        }
+        if (!action.empty()) {
+            if (action.front() != sf::Vector2i{0, 0}) {
+                snake.direction = action.front();
+            }
+            std::cout << "direction (" << action.front().x << " " << action.front().y << ")\n";
+            action.pop();
+        } 
         auto oldTail = snake.node[snake.node.size() - 1];
         
         // 更新蛇的位置和颜色
