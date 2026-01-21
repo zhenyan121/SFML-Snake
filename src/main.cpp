@@ -3,7 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-
+// 开启ai模式
+#define AI_MODE
 
 
 
@@ -152,6 +153,7 @@ void update (float deltaTime, World& world, Snake& snake, GameState& gameState, 
     snake.currentTime += deltaTime;
     if (snake.currentTime >= snake.moveTime) {
         snake.currentTime = 0;
+        #ifdef AI_MODE
         static std::queue<sf::Vector2i> action;
         if (action.empty()) {
             decideNextMove(action, world, snake);
@@ -162,7 +164,8 @@ void update (float deltaTime, World& world, Snake& snake, GameState& gameState, 
             }
             std::cout << "direction (" << action.front().x << " " << action.front().y << ")\n";
             action.pop();
-        } 
+        }
+        #endif 
         auto oldTail = snake.node[snake.node.size() - 1];
         
         // 更新蛇的位置和颜色

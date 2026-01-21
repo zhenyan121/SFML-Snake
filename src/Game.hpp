@@ -26,7 +26,7 @@ struct Snake {
     std::vector<sf::Vector2i> node;
     sf::Vector2i direction = {0, 1};
 
-    const float moveTime = 0.1f;
+    const float moveTime = 0.18f;
 
     float currentTime = 0.f;
 
