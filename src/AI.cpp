@@ -23,34 +23,58 @@ void decideNextMove(std::queue<sf::Vector2i>& action, const World& world, const 
     if (!path.empty()) {
         sf::Vector2i nextStep = path[0];
         sf::Vector2i current = snake.node[0];
-        action.push(nextStep - current);
-    } else {
-        // 此时如果不做处理，蛇就会撞死。
-        // 简单的兜底：随便找一个没被堵住的邻居格子走（为了活命）
-        // 更好的兜底（之前的教程提到的）：去追自己的尾巴 (snake.node.back())
-        
-        auto pathToTail = aStarSearch(snake, snake.node[0], snake.node.back());
-        if (!pathToTail.empty()) {
-             sf::Vector2i nextStep = pathToTail[0];
-             action.push(nextStep - snake.node[0]);
-        } else {
-            // 实在没办法了，找个合法的格子随便走一步，尽量不要立即死
-            // (代码略：遍历上下左右，找一个不是墙也不是蛇身的格子)
-            std::vector<sf::Vector2i> dir = {
-                {1, 0},
-                {-1, 0},
-                {0, 1},
-                {0, -1}
-            };
-            for (const auto& d : dir) {
-                auto newPath = snake.node[0] + d;
-                if (std::find(snake.node.begin(), snake.node.end(), newPath) == snake.node.end()) {
-                    action.push(d);
-                    break;
-                }
+        // 如果吃到豆子之后可以到自己的尾巴，说明是安全的
+        if (isSafeMove(snake, world, nextStep)) {
+            action.push(nextStep - current);
+            return;
+        }
+    } 
+    // 此时如果不做处理，蛇就会撞死。
+    // 简单的兜底：随便找一个没被堵住的邻居格子走（为了活命）
+    // 更好的兜底（之前的教程提到的）：去追自己的尾巴 (snake.node.back())
+    
+    auto pathToTail = aStarSearch(snake, snake.node[0], snake.node.back());
+    if (!pathToTail.empty()) {
+            sf::Vector2i nextStep = pathToTail[0];
+            action.push(nextStep - snake.node[0]);
+            std::cout << "to tail\n";
+            return;
+    } 
+    // 实在没办法了，找个离豆子最远合法的格子走一步，尽量不要立即死
+    std::vector<sf::Vector2i> dir = {
+        {1, 0},
+        {-1, 0},
+        {0, 1},
+        {0, -1}
+    };
+    sf::Vector2i maxDir;
+    int maxDis = -1;
+    for (const auto& d : dir) {
+        auto newPath = snake.node[0] + d;
+        if (std::find(snake.node.begin(), snake.node.end(), newPath) == snake.node.end()) {
+            if (maxDis == -1) {
+                auto dis = absVector2i(newPath - world.pellet);
+                maxDis = dis.x + dis.y;
+                maxDir = d;
+                continue;
             }
+            auto dis = absVector2i(newPath - world.pellet);
+            int s = dis.x + dis.y;
+            if (s > maxDis) {
+                maxDis = s;
+                maxDir = d;
+            }
+            
         }
     }
+    
+    if (maxDis >= 0) {
+        action.push(maxDir);
+        std::cout << "try to leave\n";
+        return;
+    }
+
+    std::cout << "no way to move\n";
 
 
 }
@@ -62,11 +86,14 @@ std::vector<sf::Vector2i> aStarSearch(const Snake& snake, const sf::Vector2i& be
 
     frontier.push({begin, 0, std::abs(end.x - begin.x) + std::abs(end.y - begin.y), {-1, -1}});
 
-    std::vector<sf::Vector2i> obstacle(snake.node.begin() , snake.node.end());
+    // 排除尾巴
+    std::vector<sf::Vector2i> obstacle(snake.node.begin() , snake.node.end() - 1);
 
     std::vector<std::vector<bool>> isarrive(ROW, std::vector<bool>(COL, false));
 
     std::vector<std::vector<sf::Vector2i>> parent(ROW, std::vector<sf::Vector2i>(COL)); 
+
+    std::vector<sf::Vector2i> result;
 
     isarrive[begin.x][begin.y] = true;
     parent[begin.x][begin.y] = {-1, -1}; 
@@ -132,11 +159,37 @@ std::vector<sf::Vector2i> aStarSearch(const Snake& snake, const sf::Vector2i& be
     }
 
     if (path.size() > 1) {
-        path.erase(path.begin());
-    } else if (!path.empty()) {
-        path.clear();
+        result.push_back(path[1]);
+        
+    } 
+
+    return result;
+
+}
+
+bool isSafeMove(const Snake& snake, const World& world, const sf::Vector2i& nextStep) {
+    Snake virtualSnake = snake;
+    auto size = virtualSnake.node.size();
+
+    auto oldTail = virtualSnake.node[size - 1];
+
+    for (int i = size - 1; i > 0 ; i--) {
+        virtualSnake.node[i] = virtualSnake.node[i - 1];
     }
 
-    return path;
+
+    if (nextStep == world.pellet) {
+        virtualSnake.node.push_back(oldTail);    
+    }
+
+    auto pathToTail = aStarSearch(virtualSnake, virtualSnake.node[0], virtualSnake.node.back());
+    if (!pathToTail.empty()) {
+        std::cout << "path to tail is good\n";
+        return true;
+    } else {
+        std::cout << "not safe\n";
+        return false;
+    }
+    
 
 }

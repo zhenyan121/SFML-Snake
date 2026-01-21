@@ -24,3 +24,5 @@ std::vector<sf::Vector2i> aStarSearch(const Snake& snake, const sf::Vector2i& be
 
 
 void decideNextMove(std::queue<sf::Vector2i>& action, const World& world, const Snake& snake);
+
+bool isSafeMove(const Snake& snake, const World& world, const sf::Vector2i& nextStep);
