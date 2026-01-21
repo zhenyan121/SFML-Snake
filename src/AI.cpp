@@ -126,15 +126,16 @@ std::vector<sf::Vector2i> aStarSearch(const Snake& snake, const sf::Vector2i& be
         }
 
         for (const auto& d : dir) {
-            int nx = current.p.x + d.x;
-            int ny = current.p.y + d.y;
+
+            int nx = (current.p.x + d.x + ROW) % ROW;
+            int ny = (current.p.y + d.y + COL) % COL;
 
             sf::Vector2i npos = {nx ,ny};
 
             // 边界情况
-            if (ny < 0 || ny >= COL || nx < 0 || nx >= ROW ) {
+            /*if (ny < 0 || ny >= COL || nx < 0 || nx >= ROW ) {
                 continue;
-            }
+            }*/
 
             if(isarrive[nx][ny]) {
                 continue;
